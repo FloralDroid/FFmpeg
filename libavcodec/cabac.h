@@ -29,7 +29,8 @@
 
 #include <stdint.h>
 
-extern const uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63];
+extern const uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63]
+    __attribute__((visibility("hidden")));
 #define H264_NORM_SHIFT_OFFSET 0
 #define H264_LPS_RANGE_OFFSET 512
 #define H264_MLPS_STATE_OFFSET 1024
