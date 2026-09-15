@@ -28,6 +28,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include "libavcodec/avcodec.h"
+#include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
@@ -39,11 +40,17 @@
 
 static inline int v4l2_splane_video(struct v4l2_capability *cap)
 {
-    if (cap->capabilities & (V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_VIDEO_OUTPUT) &&
-        cap->capabilities & V4L2_CAP_STREAMING)
+    unsigned int capabilities = cap->capabilities & V4L2_CAP_DEVICE_CAPS ?
+                                cap->device_caps : cap->capabilities;
+
+    if (!(capabilities & V4L2_CAP_STREAMING))
+        return 0;
+
+    if ((capabilities & V4L2_CAP_VIDEO_CAPTURE) &&
+        (capabilities & V4L2_CAP_VIDEO_OUTPUT))
         return 1;
 
-    if (cap->capabilities & V4L2_CAP_VIDEO_M2M)
+    if (capabilities & V4L2_CAP_VIDEO_M2M)
         return 1;
 
     return 0;
@@ -51,11 +58,17 @@ static inline int v4l2_splane_video(struct v4l2_capability *cap)
 
 static inline int v4l2_mplane_video(struct v4l2_capability *cap)
 {
-    if (cap->capabilities & (V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_VIDEO_OUTPUT_MPLANE) &&
-        cap->capabilities & V4L2_CAP_STREAMING)
+    unsigned int capabilities = cap->capabilities & V4L2_CAP_DEVICE_CAPS ?
+                                cap->device_caps : cap->capabilities;
+
+    if (!(capabilities & V4L2_CAP_STREAMING))
+        return 0;
+
+    if ((capabilities & V4L2_CAP_VIDEO_CAPTURE_MPLANE) &&
+        (capabilities & V4L2_CAP_VIDEO_OUTPUT_MPLANE))
         return 1;
 
-    if (cap->capabilities & V4L2_CAP_VIDEO_M2M_MPLANE)
+    if (capabilities & V4L2_CAP_VIDEO_M2M_MPLANE)
         return 1;
 
     return 0;
@@ -294,6 +307,19 @@ av_cold int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
     DIR *dirp;
 
     V4L2m2mContext *s = priv->context;
+
+    if (priv->device && priv->device[0]) {
+        av_strlcpy(s->devname, priv->device, sizeof(s->devname));
+        av_log(s->avctx, AV_LOG_DEBUG, "probing configured device %s\n", s->devname);
+        ret = v4l2_probe_driver(s);
+        if (ret) {
+            av_log(s->avctx, AV_LOG_ERROR, "Configured V4L2 device %s is not usable\n",
+                   s->devname);
+            memset(s->devname, 0, sizeof(s->devname));
+            return ret;
+        }
+        return v4l2_configure_contexts(s);
+    }
 
     dirp = opendir("/dev");
     if (!dirp)

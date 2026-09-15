@@ -38,7 +38,9 @@
 
 #define V4L_M2M_DEFAULT_OPTS \
     { "num_output_buffers", "Number of buffers in the output context",\
-        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 2, INT_MAX, FLAGS }
+        OFFSET(num_output_buffers), AV_OPT_TYPE_INT, { .i64 = 16 }, 2, INT_MAX, FLAGS }, \
+    { "device", "V4L2 M2M device path (empty probes /dev/video*)", \
+        OFFSET(device), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS }
 
 typedef struct V4L2m2mContext {
     char devname[PATH_MAX];
@@ -75,6 +77,7 @@ typedef struct V4L2m2mPriv {
 
     int num_output_buffers;
     int num_capture_buffers;
+    char *device;
 } V4L2m2mPriv;
 
 /**

@@ -16,6 +16,22 @@
 
 #include "config.h"
 
+#if defined(FLORAL_FFMPEG_BACKEND_VAAPI) == defined(FLORAL_FFMPEG_BACKEND_V4L2_M2M)
+#error "Select exactly one Floral FFmpeg backend"
+#endif
+
+#if defined(FLORAL_FFMPEG_BACKEND_V4L2_M2M)
+#if !ARCH_AARCH64
+#error "The V4L2 M2M profile must target AArch64"
+#endif
+#if !CONFIG_V4L2_M2M
+#error "FloralDroid ARM64 FFmpeg requires the V4L2 M2M backend"
+#endif
+#else
+#if !ARCH_X86_64
+#error "The VAAPI profile must target x86_64"
+#endif
 #if !HAVE_VAAPI_DRM
 #error "FloralDroid FFmpeg requires the VA-API DRM display backend"
+#endif
 #endif
